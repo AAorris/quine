@@ -2,44 +2,39 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="X-UA-Compatible" content="ie=edge">
-        <title>Document</title>
+        <title>Indental</title>
         <style>
             *           {margin:0;padding:0;border:0;outline:0;text-decoration:none;font-weight:inherit;font-style:inherit;color:inherit;font-size:100%;font-family:inherit;vertical-align:baseline;list-style:none;border-collapse:collapse;border-spacing:0; -webkit-font-smoothing: antialiased;-moz-osx-font-smoothing: grayscale;}
             *:focus     {outline: none}
-            ::selection {background: #eee; opacity:1.0; color:#000; padding:10px;}
-            textarea    {width: 100vw; height: 100vh; background: white; color: black;font-family: monospace;font-size:150%;line-height: 1.3em;}
+            ::selection {background:#eee;opacity:1.0;color:#000;padding:10px;}
             .deploy,
-            input,
-            button      {position: fixed; bottom: 20px; right: 20px; color: white; background: black; padding: 10px;}
-            main,
-            #progress   {position:fixed;width:100vw;height:100vh;top:0;left:0;background:black;color:white;z-index:-1;}
-            main        {z-index:1;display:flex;justify-content:center;align-items:center;}
+            #deployKey,
+            #deployBtn  {position: fixed; bottom: 20px; right: 20px; color: white; background: black; padding: 10px;}
+            #progress   {position:fixed;width:100vw;height:100vh;top:0;left:0;background:black;color:white;z-index:-1;display:flex;align-items:center;justify-content:center;}
+            textarea    {background:white;color:black;font-family:monospace;font-size:150%;line-height: 1.3em;}
+            #editor,
+            pre[view]    {position:absolute;width:50vw;height:100vh;padding:3em;}
+            pre[view]    {background: black; color: white;left:50vw;}
         </style>
     </head>
     <body>
-        <textarea id="editor" layer="2"></textarea>    
-        <main layer="1">
-            <p>Press Shift+Enter to edit document and Shift+Space to view results</p>
-        </main>
-        <div id="progress" layer="3">Click the button to deploy</div>
-        <div class="deploy"><input id="deployKey" type="text" placeholder="key..."><button>Deploy</button></div>
-        <script>
-            document.addEventListener('keypress', e => {
-                if (!e.shiftKey || ![' ', 'Enter'].includes(e.key)) return
-                e.preventDefault()
-                document.querySelector('main').style.zIndex = e.key === ' ' ? 1 : -1
-                document.querySelector('textarea').style.zIndex = e.key === 'Enter' ? 1 : -1
-            })
-            editor.addEventListener('input', e => {
-                const dom = new DOMParser().parseFromString(editor.value, 'text/html')
-                document.querySelector('main').innerHTML = dom.querySelector('main').innerHTML
-                document.querySelector('style').innerHTML = dom.querySelector('style').innerHTML
-            })
-            editor.value = document.documentElement.outerHTML
-            document.querySelector('button').addEventListener('click', e => {
-                const title = new DOMParser().parseFromString(editor.value, 'text/html').head.querySelector('title').textContent
+        <textarea id=editor layer=2 spellcheck=false>indental
+  is : COOL</textarea>
+        <pre view name=json></pre>
+        <div id=progress layer=3>Click the button to deploy</div>
+        <div class=deploy><input id=deployKey type=text placeholder=nowKey><button id=deployBtn>Deploy</button></div>
+        <script name=deploy>
+            deployKey.value = localStorage.deployKey || ''
+            deployKey.addEventListener('input', e => localStorage.deployKey = e.target.value)
+            let toDeploy = e => {
+                const title = document.head.querySelector('title').textContent
+                const files = [
+                    {file:"index.html",data:document.documentElement.outerHTML},
+                    {file:"data.ndtl",data:editor.value},
+                    {file:"data.json",data:document.querySelector('pre[view]').textContent}
+                ]
                 const payload = {version: 2, // zeit api version
-                    name: title,files: [{file: "index.html", data: editor.value}],builds: [{src:"*.html", use:"@now/static"}]}
+                    name:title,files,builds:[{src:"*",use:"@now/static"}]}
                 progress.style.zIndex = 1; progress.textContent = 'Deploying...'
                 fetch('https://api.zeit.co/v9/now/deployments', {
                     method: 'POST',
@@ -47,9 +42,19 @@
                     body: JSON.stringify(payload)
                 }).then(meta => meta.json()).then(data => {
                     if (data.url) progress.innerHTML = `<a href="https://${data.url}">${data.url}</a>`
-                    else progress.innerHTML = `<pre>${JSON.stringify(data, null, 2).replace(/(http:[^"]+)/, v => `<a href="${v}">${v}</a>`)}</pre>`
+                    else progress.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`
                 })
-            })
-            deployKey.value = localStorage.deployKey || ''
-            deployKey.addEventListener('input', e => localStorage.deployKey = e.target.value)
-        </script></body></html>
+            }
+            deployBtn.addEventListener('click', toDeploy)
+        </script>
+        <script name=app type=module>
+            import ndtl from './ndtl.mjs'
+            window.ndtl = ndtl
+            let toPreview = e => document.querySelector('pre[view]').textContent = (
+                JSON.stringify(ndtl(e.target.value), null, 2)
+            )
+            editor.addEventListener('input', toPreview)
+            if (!editor.value) editor.value = editor.textContent
+            toPreview({target:{value:editor.value}})
+        </script>
+</body></html>

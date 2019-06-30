@@ -21,3 +21,11 @@ Visit https://zeit.co/account/tokens
 Put the token into the token input.
 
 Never put your token into the document or share the token!
+
+## Deploying your own
+
+Fork or branch (Contributions welcome)
+
+Edit `now.json`
+
+`now`
