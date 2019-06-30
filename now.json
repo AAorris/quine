@@ -1,0 +1,6 @@
+{
+    "name": "quine",
+    "version": 2,
+    "alias": ["quine.amorris.ca"],
+    "public": true
+}
